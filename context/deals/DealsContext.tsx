@@ -9,8 +9,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Deal, DealView, DealItem, Company, Contact, Board } from '@/types';
 import { dealsService } from '@/lib/supabase';
 import { useAuth } from '../AuthContext';
-import { queryKeys, DEALS_VIEW_KEY } from '@/lib/query';
-import { useDeals as useTanStackDealsQuery, useCreateDeal } from '@/lib/query/hooks/useDealsQuery';
+import { queryKeys } from '@/lib/query';
+import { useDeals as useTanStackDealsQuery, useCreateDeal, useUpdateDeal, useDeleteDeal } from '@/lib/query/hooks/useDealsQuery';
 
 interface DealsContextType {
   // Raw data (agora vem direto do TanStack Query)
@@ -44,6 +44,8 @@ export const DealsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const createDealMutation = useCreateDeal();
+  const updateDealMutation = useUpdateDeal();
+  const deleteDealMutation = useDeleteDeal();
 
   // ============================================
   // TanStack Query como fonte única de verdade
@@ -89,35 +91,12 @@ export const DealsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
 
   const updateDeal = useCallback(async (id: string, updates: Partial<Deal>) => {
-    // Cancel background refetches to prevent overwriting optimistic update
-    await queryClient.cancelQueries({ queryKey: DEALS_VIEW_KEY });
-
-    // Snapshot for rollback
-    const previousDeals = queryClient.getQueryData<DealView[]>(DEALS_VIEW_KEY);
-
-    // Optimistic update
-    queryClient.setQueryData<DealView[]>(DEALS_VIEW_KEY, (old = []) =>
-      old.map(deal =>
-        deal.id === id ? { ...deal, ...updates, updatedAt: new Date().toISOString() } : deal
-      )
-    );
-
-    const { error: updateError } = await dealsService.update(id, updates);
-
-    if (updateError) {
-      console.error('Erro ao atualizar deal:', updateError.message);
-      // Rollback usando snapshot
-      if (previousDeals !== undefined) {
-        queryClient.setQueryData(DEALS_VIEW_KEY, previousDeals);
-      } else {
-        // Cache estava frio — sem snapshot para restaurar, força refetch
-        await queryClient.invalidateQueries({ queryKey: DEALS_VIEW_KEY });
-      }
-      return;
+    try {
+      await updateDealMutation.mutateAsync({ id, updates });
+    } catch (error) {
+      console.error('Erro ao atualizar deal:', (error as Error).message);
     }
-
-    // Sucesso: Realtime vai sincronizar.
-  }, [queryClient]);
+  }, [updateDealMutation]);
 
   const updateDealStatus = useCallback(
     async (id: string, newStatus: string, lossReason?: string) => {
@@ -135,34 +114,12 @@ export const DealsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
 
   const deleteDeal = useCallback(async (id: string) => {
-    // Cancel background refetches to prevent overwriting optimistic update
-    await queryClient.cancelQueries({ queryKey: DEALS_VIEW_KEY });
-
-    // Snapshot for rollback
-    const previousDeals = queryClient.getQueryData<DealView[]>(DEALS_VIEW_KEY);
-
-    // Optimistic update - remove da UI imediatamente
-    queryClient.setQueryData<DealView[]>(DEALS_VIEW_KEY, (old = []) =>
-      old.filter(deal => deal.id !== id)
-    );
-
-    const { error: deleteError } = await dealsService.delete(id);
-
-    if (deleteError) {
-      console.error('Erro ao deletar deal:', deleteError.message);
-      // Rollback usando snapshot
-      if (previousDeals !== undefined) {
-        queryClient.setQueryData(DEALS_VIEW_KEY, previousDeals);
-      } else {
-        // Cache estava frio — sem snapshot para restaurar, força refetch
-        await queryClient.invalidateQueries({ queryKey: DEALS_VIEW_KEY });
-      }
-      return;
+    try {
+      await deleteDealMutation.mutateAsync(id);
+    } catch (error) {
+      console.error('Erro ao deletar deal:', (error as Error).message);
     }
-
-    // Sucesso: atualiza stats do dashboard
-    await queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
-  }, [queryClient]);
+  }, [deleteDealMutation]);
 
   // ============================================
   // Items Operations
