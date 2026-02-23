@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect, useId, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useCRM } from '@/context/CRMContext';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import ConfirmModal from '@/components/ConfirmModal';
 import { LossReasonModal } from '@/components/ui/LossReasonModal';
 import { useMoveDealSimple } from '@/lib/query/hooks';
+import { DEALS_VIEW_KEY } from '@/lib/query';
 import { FocusTrap, useFocusReturn } from '@/lib/a11y';
-import { Activity } from '@/types';
+import { Activity, DealView } from '@/types';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { useResponsiveMode } from '@/hooks/useResponsiveMode';
 import { DealSheet } from '../DealSheet';
@@ -73,7 +75,6 @@ export const DealDetailModal: React.FC<DealDetailModalProps> = ({ dealId, isOpen
   const isMobile = mode === 'mobile';
 
   const {
-    deals,
     contacts,
     updateDeal,
     deleteDeal,
@@ -93,8 +94,17 @@ export const DealDetailModal: React.FC<DealDetailModalProps> = ({ dealId, isOpen
   const { addToast } = useToast();
   const router = useRouter();
 
+  // Subscribe to the same cache the Kanban uses (DEALS_VIEW_KEY).
+  // This ensures newly-created deals (written there by the optimistic insert in CRMContext.addDeal)
+  // are immediately visible to the modal, without waiting for Realtime to update ['deals', 'list'].
+  const { data: allDeals = [] } = useQuery<DealView[]>({
+    queryKey: DEALS_VIEW_KEY,
+    queryFn: () => [] as DealView[], // never called — enabled: false; queryFn required by TanStack Query v5
+    enabled: false, // don't trigger a new fetch — data is always hydrated by the Kanban's useDealsByBoard
+  });
+
   // Performance: avoid repeated `find(...)` on large arrays.
-  const dealsById = useMemo(() => new Map(deals.map((d) => [d.id, d])), [deals]);
+  const dealsById = useMemo(() => new Map(allDeals.map((d) => [d.id, d])), [allDeals]);
   const contactsById = useMemo(() => new Map(contacts.map((c) => [c.id, c])), [contacts]);
   const boardsById = useMemo(() => new Map(boards.map((b) => [b.id, b])), [boards]);
   const lifecycleStageById = useMemo(() => new Map(lifecycleStages.map((s) => [s.id, s])), [lifecycleStages]);

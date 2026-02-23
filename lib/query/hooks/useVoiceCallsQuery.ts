@@ -52,7 +52,7 @@ export function useVoiceConfigQuery() {
       };
     },
     enabled: !!orgId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always refetch — ensures badge updates immediately after enable/disable
   });
 }
 
@@ -147,11 +147,11 @@ export function useEnableVoiceMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { apiKey: string }): Promise<{ agentId: string }> => {
+    mutationFn: async (params: { apiKey: string; agentId: string }): Promise<{ agentId: string }> => {
       const response = await fetch('/api/voice/enable', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ apiKey: params.apiKey }),
+        body: JSON.stringify({ apiKey: params.apiKey, agentId: params.agentId }),
       });
       if (!response.ok) {
         const err = await response.json();

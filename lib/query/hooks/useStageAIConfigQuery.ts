@@ -181,6 +181,43 @@ export function useDeleteStageAIConfigMutation() {
 /**
  * Hook para toggle rápido de AI em um estágio.
  */
+/**
+ * Hook para gerar prompts de AI via LLM para todos os estágios de um board.
+ * Retorna os prompts gerados sem salvar — o save é feito pelo componente.
+ */
+export function useGenerateStagePromptsMutation() {
+  return useMutation({
+    mutationFn: async (input: { boardId: string; businessDescription: string }) => {
+      const response = await fetch('/api/ai/generate-stage-prompts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao gerar prompts');
+      }
+
+      return data as {
+        success: boolean;
+        stages: Array<{
+          stageId?: string;
+          stageName: string;
+          stageOrder: number;
+          systemPrompt: string;
+          stageGoal: string;
+          advancementCriteria: string[];
+          suggestedMaxMessages: number;
+          handoffKeywords: string[];
+        }>;
+        tokensUsed?: number;
+      };
+    },
+  });
+}
+
 export function useToggleStageAIMutation() {
   const queryClient = useQueryClient();
 

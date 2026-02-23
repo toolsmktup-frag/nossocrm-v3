@@ -2,7 +2,8 @@
  * @fileoverview Voice Enable API
  *
  * POST /api/voice/enable
- * Cria agent ElevenLabs para a organização e habilita voice.
+ * Salva API key + Agent ID da ElevenLabs e habilita voice para a organização.
+ * O agent deve ser criado previamente no painel da ElevenLabs.
  * Apenas admins podem habilitar.
  *
  * @module app/api/voice/enable/route
@@ -10,11 +11,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import {
-  createOrgAgent,
-  DEFAULT_AGENT_SYSTEM_PROMPT,
-  DEFAULT_FIRST_MESSAGE,
-} from '@/lib/voice/elevenlabs.service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,9 +41,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
-    // Parse body to get API key
+    // Parse body — API key + Agent ID (imported from ElevenLabs dashboard)
     const body = await request.json().catch(() => ({}));
-    const { apiKey } = body as { apiKey?: string };
+    const { apiKey, agentId } = body as { apiKey?: string; agentId?: string };
 
     if (!apiKey) {
       return NextResponse.json(
@@ -56,45 +52,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if already enabled
-    const { data: orgSettings } = await supabase
-      .from('organization_settings')
-      .select('voice_enabled, elevenlabs_agent_id, elevenlabs_api_key')
-      .eq('organization_id', profile.organization_id)
-      .single();
-
-    if (orgSettings?.voice_enabled && orgSettings.elevenlabs_agent_id) {
-      // Update API key if changed
-      if (orgSettings.elevenlabs_api_key !== apiKey) {
-        await supabase
-          .from('organization_settings')
-          .update({ elevenlabs_api_key: apiKey })
-          .eq('organization_id', profile.organization_id);
-      }
-      return NextResponse.json({
-        message: 'Voice already enabled',
-        agentId: orgSettings.elevenlabs_agent_id,
-      });
+    if (!agentId) {
+      return NextResponse.json(
+        { error: 'agentId is required' },
+        { status: 400 }
+      );
     }
 
-    // Get org name for the agent
-    const { data: org } = await supabase
-      .from('organizations')
-      .select('name')
-      .eq('id', profile.organization_id)
-      .single();
-
-    const orgName = org?.name || 'Empresa';
-
-    // Create ElevenLabs agent
-    const agentId = await createOrgAgent(apiKey, {
-      name: `${orgName} - Sales Agent`,
-      systemPrompt: DEFAULT_AGENT_SYSTEM_PROMPT,
-      firstMessage: DEFAULT_FIRST_MESSAGE,
-      language: 'pt',
-    });
-
-    // Save agent ID, API key, and enable voice
+    // Save API key, agent ID, and enable voice
     const { error: updateError } = await supabase
       .from('organization_settings')
       .update({
