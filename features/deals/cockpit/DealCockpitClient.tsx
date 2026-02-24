@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '@/context/AuthContext';
-import { useCRM } from '@/context/CRMContext';
+import { useCockpitCRM } from '@/context/hooks/useCRMSelectors';
 import { useMoveDealSimple } from '@/lib/query/hooks';
 import { normalizePhoneE164 } from '@/lib/phone';
 
@@ -599,7 +599,7 @@ export default function DealCockpitClient({ dealId }: { dealId?: string }) {
     activities,
     addActivity,
     updateDeal,
-  } = useCRM();
+  } = useCockpitCRM();
 
   const [tab, setTab] = useState<Tab>('chat');
   const [query, setQuery] = useState('');

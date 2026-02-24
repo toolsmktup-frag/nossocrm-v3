@@ -66,8 +66,9 @@ export function MessageInput({ conversation }: MessageInputProps) {
   const isDisabled = conversation.isWindowExpired || isPending || isSendingTemplate || isUploading;
 
   // Cleanup blob URL on unmount to prevent memory leaks (FIX-03)
+  // Also used by clearMedia to avoid depending on the entire pendingMedia object.
   const pendingMediaRef = useRef(pendingMedia);
-  pendingMediaRef.current = pendingMedia;
+  useEffect(() => { pendingMediaRef.current = pendingMedia; }, [pendingMedia]);
   useEffect(() => {
     return () => {
       if (pendingMediaRef.current?.preview) {
@@ -89,12 +90,13 @@ export function MessageInput({ conversation }: MessageInputProps) {
     e.target.value = '';
   }, []);
 
+  // Stable callback — reads latest pendingMedia via ref, no dep on the state value.
   const clearMedia = useCallback(() => {
-    if (pendingMedia?.preview) {
-      URL.revokeObjectURL(pendingMedia.preview);
+    if (pendingMediaRef.current?.preview) {
+      URL.revokeObjectURL(pendingMediaRef.current.preview);
     }
     setPendingMedia(null);
-  }, [pendingMedia]);
+  }, []);
 
   const handleSendMedia = useCallback(async () => {
     if (!pendingMedia || isDisabled) return;
@@ -125,7 +127,7 @@ export function MessageInput({ conversation }: MessageInputProps) {
         },
       }
     );
-  }, [pendingMedia, isDisabled, uploadMedia, conversation.id, text, sendMessage, clearMedia]);
+  }, [pendingMedia, isDisabled, uploadMedia, conversation.id, text, sendMessage]);
 
   const handleTemplateSelect = useCallback(
     (template: TemplateData, params?: Record<string, string>) => {

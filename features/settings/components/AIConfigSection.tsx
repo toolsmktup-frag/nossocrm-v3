@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useCRM } from '@/context/CRMContext';
+import { useAIConfig } from '@/context/hooks/useCRMSelectors';
 import { Bot, Key, Cpu, CheckCircle, AlertCircle, Loader2, Save, Trash2, ChevronDown, ChevronUp, Shield, Brain } from 'lucide-react';
 import { useToast } from '@/context/ToastContext';
 import { useAuth } from '@/context/AuthContext';
@@ -212,7 +212,7 @@ export const AIConfigSection: React.FC = () => {
         aiThinking, setAiThinking,
         aiSearch, setAiSearch,
         aiAnthropicCaching, setAiAnthropicCaching
-    } = useCRM();
+    } = useAIConfig();
 
     const { showToast } = useToast();
 
