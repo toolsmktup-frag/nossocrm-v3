@@ -75,14 +75,6 @@ vi.mock('@/features/deals/components/AIExtractedFields', () => ({
   AIExtractedFields: () => null,
 }));
 
-vi.mock('@/features/deals/components/WhatsAppCallButton', () => ({
-  WhatsAppCallButton: () => null,
-}));
-
-vi.mock('@/features/voice/components/VoiceCallButton', () => ({
-  VoiceCallButton: () => null,
-}));
-
 vi.mock('@/context/CRMContext', () => ({
   useCRM: () => {
     const board = {

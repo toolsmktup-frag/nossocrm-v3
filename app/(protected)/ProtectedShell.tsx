@@ -9,7 +9,6 @@ import { ThemeProvider } from '@/context/ThemeContext'
 import { AuthProvider } from '@/context/AuthContext'
 import { CRMProvider } from '@/context/CRMContext'
 import { AIProvider } from '@/context/AIContext'
-import { WhatsAppCallingProvider } from '@/features/voice/components/WhatsAppCallingProvider'
 import Layout from '@/components/Layout'
 
 export default function ProtectedShell({
@@ -67,9 +66,7 @@ export default function ProtectedShell({
                     <AuthProvider>
                         <CRMProvider>
                             <AIProvider>
-                                <WhatsAppCallingProvider>
                                     {shouldUseAppShell ? <Layout>{children}</Layout> : children}
-                                </WhatsAppCallingProvider>
                             </AIProvider>
                         </CRMProvider>
                     </AuthProvider>

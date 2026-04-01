@@ -45,9 +45,6 @@ import { ActivityRow } from '@/features/activities/components/ActivityRow';
 import { formatPriorityPtBr } from '@/lib/utils/priority';
 import { BriefingDrawer } from '@/features/deals/components/BriefingDrawer';
 import { AIExtractedFields } from '@/features/deals/components/AIExtractedFields';
-import { VoiceCallButton } from '@/features/voice/components/VoiceCallButton';
-import { WhatsAppCallButton } from '@/features/deals/components/WhatsAppCallButton';
-import { CallHistorySection } from '@/features/voice/components/CallHistorySection';
 
 interface DealDetailModalProps {
   dealId: string | null;
@@ -130,7 +127,7 @@ export const DealDetailModal: React.FC<DealDetailModalProps> = ({ dealId, isOpen
   const [aiResult, setAiResult] = useState<{ suggestion: string; score: number } | null>(null);
   const [emailDraft, setEmailDraft] = useState<string | null>(null);
   const [newNote, setNewNote] = useState('');
-  const [activeTab, setActiveTab] = useState<'timeline' | 'products' | 'info' | 'calls'>('timeline');
+  const [activeTab, setActiveTab] = useState<'timeline' | 'products' | 'info'>('timeline');
   const noteTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [objection, setObjection] = useState('');
@@ -569,17 +566,6 @@ export const DealDetailModal: React.FC<DealDetailModalProps> = ({ dealId, isOpen
                   <FileText size={14} />
                   <span className="hidden sm:inline">Preparar</span>
                 </button>
-                <WhatsAppCallButton
-                  dealId={deal.id}
-                  contactId={contact?.id || null}
-                  contactPhone={contact?.phone || null}
-                  contactName={contact?.name || null}
-                  className="ml-2"
-                />
-                <VoiceCallButton
-                  dealId={deal.id}
-                  className="ml-2 px-3 py-1.5 bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-500/30 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
-                />
                 <button
                   onClick={() => setDeleteId(deal.id)}
                   className="ml-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
@@ -864,12 +850,6 @@ export const DealDetailModal: React.FC<DealDetailModalProps> = ({ dealId, isOpen
                     className={`text-sm font-bold h-14 border-b-2 transition-colors ${activeTab === 'info' ? 'border-primary-500 text-primary-600 dark:text-white' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-white'}`}
                   >
                     IA Insights
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('calls')}
-                    className={`text-sm font-bold h-14 border-b-2 transition-colors ${activeTab === 'calls' ? 'border-primary-500 text-primary-600 dark:text-white' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-white'}`}
-                  >
-                    Chamadas
                   </button>
                 </div>
               </div>
@@ -1224,9 +1204,6 @@ export const DealDetailModal: React.FC<DealDetailModalProps> = ({ dealId, isOpen
                   </div>
                 )}
 
-                {activeTab === 'calls' && (
-                  <CallHistorySection dealId={deal.id} />
-                )}
               </div>
             </div>
           </div>

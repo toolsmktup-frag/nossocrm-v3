@@ -87,7 +87,6 @@ export function useMergeContactsMutation() {
       queryClient.invalidateQueries({ queryKey: DEALS_VIEW_KEY });
       queryClient.invalidateQueries({ queryKey: queryKeys.messagingConversations.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.activities.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.voice.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats });
       queryClient.invalidateQueries({ queryKey: queryKeys.contactDuplicates.all });
     },

@@ -215,13 +215,3 @@ export {
 } from './useAIMetricsQuery';
 
 // =============================================================================
-// VOICE MODULE
-// =============================================================================
-
-export {
-  useVoiceConfigQuery,
-  useVoiceCallsQuery,
-  useStartVoiceCallMutation,
-  useEnableVoiceMutation,
-  type VoiceConfig,
-} from './useVoiceCallsQuery';

@@ -198,27 +198,6 @@ export const queryKeys = {
         custom: () => [...base.all, 'custom'] as const,
     })),
 
-    // =========================================================================
-    // VOICE MODULE
-    // =========================================================================
-
-    /**
-     * Voice calls and configuration query keys.
-     */
-    voice: {
-        /** All voice queries */
-        all: ['voice'] as const,
-        /** Voice config for the org */
-        config: () => ['voice', 'config'] as const,
-        /** Voice calls for a deal */
-        calls: (dealId: string) => ['voice', 'calls', dealId] as const,
-        /** Single voice call */
-        call: (callId: string) => ['voice', 'call', callId] as const,
-        /** WhatsApp calling: call permission for a contact */
-        callPermission: (contactId: string) => ['voice', 'callPermission', contactId] as const,
-        /** WhatsApp calling: active call */
-        activeCall: () => ['voice', 'activeCall'] as const,
-    },
 
     /**
      * Instance-level feature flags (operator-controlled, read-only for orgs).
