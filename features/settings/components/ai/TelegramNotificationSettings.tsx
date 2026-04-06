@@ -70,6 +70,8 @@ export function TelegramNotificationSettings() {
   const [botToken, setBotToken] = useState('');
   const [chatId, setChatId] = useState('');
   const [saved, setSaved] = useState(false);
+  const [testStatus, setTestStatus] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
+  const [testError, setTestError] = useState('');
 
   const { data, isLoading } = useQuery<AISettingsResponse>({
     queryKey: QUERY_KEY,
@@ -112,6 +114,28 @@ export function TelegramNotificationSettings() {
     if (Object.keys(payload).length === 0) return;
 
     mutation.mutate(payload);
+  };
+
+  const handleTest = async () => {
+    setTestStatus('sending');
+    setTestError('');
+    try {
+      const res = await fetch('/api/settings/ai/test-telegram', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        setTestStatus('error');
+        setTestError(body.error ?? 'Erro ao enviar mensagem de teste.');
+      } else {
+        setTestStatus('ok');
+        setTimeout(() => setTestStatus('idle'), 5000);
+      }
+    } catch {
+      setTestStatus('error');
+      setTestError('Falha de rede. Tente novamente.');
+    }
   };
 
   const isSaveDisabled =
@@ -186,12 +210,35 @@ export function TelegramNotificationSettings() {
                     ? 'Salvo ✓'
                     : 'Salvar'}
               </Button>
+              {data?.hasTelegramBot && data?.telegramChatId && (
+                <Button
+                  variant="outline"
+                  onClick={handleTest}
+                  disabled={testStatus === 'sending'}
+                >
+                  {testStatus === 'sending'
+                    ? 'Enviando...'
+                    : testStatus === 'ok'
+                      ? 'Mensagem enviada ✓'
+                      : 'Enviar mensagem de teste'}
+                </Button>
+              )}
             </div>
 
-            {/* Error feedback */}
+            {/* Save error */}
             {mutation.isError && (
               <p className="text-sm text-destructive">
                 Erro ao salvar. Verifique os dados e tente novamente.
+              </p>
+            )}
+
+            {/* Test feedback */}
+            {testStatus === 'error' && (
+              <p className="text-sm text-destructive">{testError}</p>
+            )}
+            {testStatus === 'ok' && (
+              <p className="text-sm text-green-600 dark:text-green-400">
+                Mensagem de teste enviada com sucesso!
               </p>
             )}
           </>
