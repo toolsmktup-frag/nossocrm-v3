@@ -28,6 +28,7 @@ import { ChannelIndicator } from './ChannelIndicator';
 import { WindowExpiryBadge } from './WindowExpiryBadge';
 import { ContactPanelSkeleton } from './skeletons/ContactPanelSkeleton';
 import { useUpdateContact } from '@/lib/query/hooks/useContactsQuery';
+import { useToggleConversationAiPause } from '@/lib/query/hooks/useMessagingConversationsQuery';
 
 interface ContactPanelProps {
   conversation: ConversationView | null | undefined;
@@ -101,6 +102,29 @@ export const ContactPanel = memo(function ContactPanel({
   onResolveDuplicate,
   className,
 }: ContactPanelProps) {
+  // Hooks must be called unconditionally before any early returns
+  const updateContact = useUpdateContact();
+  const toggleConversationAiPause = useToggleConversationAiPause();
+
+  const contactId = conversation?.contactId;
+  const isAiPaused = contactId
+    ? (conversation?.contactAiPaused ?? false)
+    : (conversation?.metadata?.ai_paused === true);
+  const isPending = updateContact.isPending || toggleConversationAiPause.isPending;
+
+  function handleToggleAiPause() {
+    if (!conversation) return;
+    if (contactId) {
+      updateContact.mutate({ id: contactId, updates: { aiPaused: !isAiPaused } });
+    } else {
+      toggleConversationAiPause.mutate({
+        conversationId: conversation.id,
+        paused: !isAiPaused,
+        currentMetadata: conversation.metadata as Record<string, unknown>,
+      });
+    }
+  }
+
   if (isLoading) {
     return <ContactPanelSkeleton className={className} />;
   }
@@ -121,11 +145,9 @@ export const ContactPanel = memo(function ContactPanel({
   const {
     externalContactName,
     externalContactAvatar,
-    contactId,
     contactName,
     contactEmail,
     contactPhone,
-    contactAiPaused,
     channelType,
     channelName,
     windowExpiresAt,
@@ -136,8 +158,6 @@ export const ContactPanel = memo(function ContactPanel({
     status,
     priority,
   } = conversation;
-
-  const updateContact = useUpdateContact();
 
   const displayName = contactName || externalContactName || 'Contato desconhecido';
   const hasLinkedContact = !!contactId;
@@ -270,50 +290,47 @@ export const ContactPanel = memo(function ContactPanel({
           {assignedUserName && (
             <InfoRow icon={User} label="Atribuído para" value={assignedUserName} />
           )}
-          {contactId && (
-            <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3">
               <div className="flex items-start gap-3">
-                {contactAiPaused ? (
+                {isAiPaused ? (
                   <BotOff className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
                 ) : (
                   <Bot className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
                 )}
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">IA</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    IA {contactId ? '(contato)' : '(conversa)'}
+                  </p>
                   <p className="text-sm text-slate-900 dark:text-white">
-                    {contactAiPaused ? 'Pausada' : 'Ativa'}
+                    {isAiPaused ? 'Pausada' : 'Ativa'}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                disabled={updateContact.isPending}
-                onClick={() =>
-                  updateContact.mutate({
-                    id: contactId,
-                    updates: { aiPaused: !contactAiPaused },
-                  })
-                }
+                disabled={isPending}
+                onClick={handleToggleAiPause}
                 className={cn(
                   'relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent',
                   'transition-colors duration-200 ease-in-out focus:outline-none',
-                  contactAiPaused
-                    ? 'bg-amber-500'
-                    : 'bg-slate-200 dark:bg-slate-700',
-                  updateContact.isPending && 'opacity-50 cursor-not-allowed'
+                  isAiPaused ? 'bg-amber-500' : 'bg-slate-200 dark:bg-slate-700',
+                  isPending && 'opacity-50 cursor-not-allowed'
                 )}
-                title={contactAiPaused ? 'Reativar IA para este contato' : 'Pausar IA para este contato'}
+                title={
+                  isAiPaused
+                    ? contactId ? 'Reativar IA para este contato' : 'Reativar IA para esta conversa'
+                    : contactId ? 'Pausar IA para este contato' : 'Pausar IA para esta conversa'
+                }
               >
                 <span
                   className={cn(
                     'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0',
                     'transition duration-200 ease-in-out',
-                    contactAiPaused ? 'translate-x-4' : 'translate-x-0'
+                    isAiPaused ? 'translate-x-4' : 'translate-x-0'
                   )}
                 />
               </button>
             </div>
-          )}
         </Section>
 
         {/* Conversation Stats */}

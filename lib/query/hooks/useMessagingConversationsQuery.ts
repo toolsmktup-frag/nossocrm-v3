@@ -467,6 +467,45 @@ export function useAssignConversation() {
 }
 
 /**
+ * Toggle AI pause on a conversation (metadata-level, no linked contact required).
+ */
+export function useToggleConversationAiPause() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      conversationId,
+      paused,
+      currentMetadata,
+    }: {
+      conversationId: string;
+      paused: boolean;
+      currentMetadata: Record<string, unknown>;
+    }): Promise<void> => {
+      const supabase = getClient();
+
+      const { error } = await supabase
+        .from('messaging_conversations')
+        .update({
+          metadata: { ...currentMetadata, ai_paused: paused },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', conversationId);
+
+      if (error) throw error;
+    },
+    onSettled: (_, _err, { conversationId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.messagingConversations.detail(conversationId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.messagingConversations.all,
+      });
+    },
+  });
+}
+
+/**
  * Link a conversation to a CRM contact.
  */
 export function useLinkConversationToContact() {
