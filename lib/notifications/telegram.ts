@@ -83,6 +83,10 @@ interface HandoffMessageParams {
   dealId?: string;
 }
 
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export function formatHandoffMessage({
   contactName,
   dealTitle,
@@ -91,15 +95,16 @@ export function formatHandoffMessage({
   appUrl,
   dealId,
 }: HandoffMessageParams): string {
+  const truncated = lastMessage.slice(0, 300) + (lastMessage.length > 300 ? '...' : '');
   const lines = [
     `🔔 <b>Lead precisa de atenção humana</b>`,
     ``,
-    `👤 <b>Contato:</b> ${contactName}`,
-    `💼 <b>Deal:</b> ${dealTitle}`,
-    `📍 <b>Estágio:</b> ${stageName}`,
+    `👤 <b>Contato:</b> ${escapeHtml(contactName)}`,
+    `💼 <b>Deal:</b> ${escapeHtml(dealTitle)}`,
+    `📍 <b>Estágio:</b> ${escapeHtml(stageName)}`,
     ``,
     `💬 <b>Última mensagem:</b>`,
-    `<i>${lastMessage.slice(0, 300)}${lastMessage.length > 300 ? '...' : ''}</i>`,
+    `<i>${escapeHtml(truncated)}</i>`,
   ];
   if (appUrl && dealId) {
     lines.push(``);

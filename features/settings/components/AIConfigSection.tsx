@@ -11,7 +11,7 @@ const AI_PROVIDERS = [
     { id: 'openai' as const, name: 'OpenAI' },
 ] as const;
 
-type SupportedProvider = 'google' | 'openai';
+type SupportedProvider = 'google' | 'openai' | 'anthropic';
 
 // Função para validar API key fazendo uma chamada real à API
 async function validateApiKey(provider: string, apiKey: string, model: string): Promise<{ valid: boolean; error?: string }> {
@@ -89,7 +89,9 @@ export const AIConfigSection: React.FC = () => {
 
     // Derived values from TanStack Query data
     const aiProvider = (
-        (orgSettings?.aiProvider === 'openai' ? 'openai' : 'google')
+        (['google', 'openai', 'anthropic'].includes(orgSettings?.aiProvider ?? '')
+            ? orgSettings!.aiProvider
+            : 'google')
     ) as SupportedProvider;
     const aiModel = orgSettings?.aiModel ?? '';
     const aiKeyConfigured = orgSettings?.aiKeyConfigured ?? false;

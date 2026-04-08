@@ -307,7 +307,7 @@ export async function processIncomingMessage(
       .from('boards')
       .select('agent_goal_stage_id')
       .eq('id', deal.board_id)
-      .single();
+      .maybeSingle();
 
     if (board?.agent_goal_stage_id) {
       // Buscar a ordem do estágio atual e do estágio limite em paralelo
@@ -316,12 +316,12 @@ export async function processIncomingMessage(
           .from('board_stages')
           .select('"order"')
           .eq('id', deal.stage_id)
-          .single(),
+          .maybeSingle(),
         supabase
           .from('board_stages')
           .select('"order"')
           .eq('id', board.agent_goal_stage_id)
-          .single(),
+          .maybeSingle(),
       ]);
 
       const currentOrder = currentStageResult.data?.order ?? null;

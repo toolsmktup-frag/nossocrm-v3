@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { sendTelegramMessage } from '@/lib/notifications/telegram';
+import { isAllowedOrigin } from '@/lib/security/sameOrigin';
 
 function json<T>(body: T, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -8,7 +9,8 @@ function json<T>(body: T, status = 200): Response {
   });
 }
 
-export async function POST(): Promise<Response> {
+export async function POST(req: Request): Promise<Response> {
+  if (!isAllowedOrigin(req)) return json({ error: 'Forbidden' }, 403);
   const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
