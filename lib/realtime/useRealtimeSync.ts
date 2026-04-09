@@ -232,10 +232,39 @@ export function useRealtimeSync(
               // which can fail for complex JOIN-based policies — causing messages to not appear
               // until the user manually refreshes. Direct cache injection bypasses that entirely.
               if (payload.eventType === 'INSERT') {
-                const direction = (payload.new as Record<string, unknown>)?.direction;
+                const newRecord = payload.new as Record<string, unknown>;
+                const direction = newRecord?.direction;
                 if (direction === 'outbound') {
-                  // Our own outbound INSERT — useSendMessage already placed the message in cache.
-                  // Only refresh the conversations list (last_message preview).
+                  // Check if this outbound message was already placed in cache by useSendMessage.
+                  // If it's already there (UI-sent), just refresh the conversations list.
+                  // If it's NOT there (sent from the phone/webhook), inject it like an inbound.
+                  const flatKey = queryKeys.messagingMessages.byConversation(conversationId);
+                  const infiniteKey = [...flatKey, 'infinite'] as const;
+                  const cachedData = queryClient.getQueryData<InfiniteData<{ messages: MessagingMessage[]; nextCursor: string | null }>>(infiniteKey);
+                  const messageId = newRecord.id as string;
+                  const alreadyInCache = cachedData?.pages.some((p) => p.messages.some((m) => m.id === messageId));
+
+                  if (!alreadyInCache) {
+                    // Outbound from phone/webhook — inject into cache just like inbound
+                    const newMessage = transformMessage(newRecord as unknown as DbMessagingMessage);
+                    queryClient.setQueryData<InfiniteData<{ messages: MessagingMessage[]; nextCursor: string | null }>>(
+                      infiniteKey,
+                      (old) => {
+                        if (!old) return old;
+                        const pages = old.pages.map((page, i) => {
+                          if (i !== old.pages.length - 1) return page;
+                          if (page.messages.some((m) => m.id === newMessage.id)) return page;
+                          return { ...page, messages: [...page.messages, newMessage] };
+                        });
+                        return { ...old, pages };
+                      }
+                    );
+                    if (DEBUG_REALTIME) {
+                      console.log('[Realtime] 📤 Outbound-from-phone injected into cache:', newMessage.id);
+                    }
+                  }
+
+                  // Refresh conversations list (last_message preview).
                   pendingInvalidationsRef.current.add(queryKeys.messagingConversations.all);
                   pendingInvalidationsRef.current.add(queryKeys.messagingConversations.unreadCount());
                   if (!flushScheduledRef.current) {

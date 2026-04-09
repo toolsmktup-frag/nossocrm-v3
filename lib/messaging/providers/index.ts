@@ -10,12 +10,14 @@
 export { BaseChannelProvider } from './base.provider';
 
 // WhatsApp providers
-export { ZApiWhatsAppProvider, MetaCloudWhatsAppProvider } from './whatsapp';
+export { ZApiWhatsAppProvider, MetaCloudWhatsAppProvider, EvolutionWhatsAppProvider } from './whatsapp';
 export type {
   ZApiCredentials,
   ZApiWebhookPayload,
   MetaCloudCredentials,
   MetaCloudWebhookPayload,
+  EvolutionCredentials,
+  EvolutionWebhookPayload,
 } from './whatsapp';
 
 // Instagram providers
@@ -31,7 +33,7 @@ export type { ResendCredentials, ResendWebhookPayload } from './email';
 // =============================================================================
 
 import { registerProvider } from '../channel-factory';
-import { ZApiWhatsAppProvider, MetaCloudWhatsAppProvider } from './whatsapp';
+import { ZApiWhatsAppProvider, MetaCloudWhatsAppProvider, EvolutionWhatsAppProvider } from './whatsapp';
 import { MetaInstagramProvider } from './instagram';
 import { ResendEmailProvider } from './email';
 
@@ -214,4 +216,48 @@ registerProvider({
     },
   ],
   features: ['read_receipts'],
+});
+
+// Register Evolution API provider
+registerProvider({
+  channelType: 'whatsapp',
+  providerName: 'evolution',
+  constructor: EvolutionWhatsAppProvider,
+  displayName: 'Evolution API',
+  description: 'WhatsApp via Evolution API (self-hosted, gratuito, open-source)',
+  configFields: [
+    {
+      key: 'serverUrl',
+      label: 'URL do Servidor',
+      type: 'text',
+      required: true,
+      placeholder: 'http://localhost:8080',
+      helpText: 'URL do servidor Evolution API (sem barra no final)',
+    },
+    {
+      key: 'instanceName',
+      label: 'Nome da Instância',
+      type: 'text',
+      required: true,
+      placeholder: 'minha-instancia',
+      helpText: 'Nome da instância criada no servidor Evolution API',
+    },
+    {
+      key: 'apiKey',
+      label: 'API Key',
+      type: 'password',
+      required: true,
+      placeholder: 'sua-api-key',
+      helpText: 'AUTHENTICATION_API_KEY configurado no servidor Evolution API',
+    },
+    {
+      key: 'webhookSecret',
+      label: 'Webhook Secret (opcional)',
+      type: 'password',
+      required: false,
+      placeholder: 'secret-para-validar-webhooks',
+      helpText: 'Se configurado, valida os webhooks recebidos. Recomendado para produção.',
+    },
+  ],
+  features: ['media', 'read_receipts', 'qr_code'],
 });

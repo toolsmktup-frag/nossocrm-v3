@@ -44,6 +44,71 @@ export function registerMessagingTools(server: McpServer) {
     }
   );
 
+  // ─── crm.channels.create ─────────────────────────────────────────────────
+  server.registerTool(
+    'crm.channels.create',
+    {
+      title: 'Create messaging channel',
+      description:
+        'Creates a new messaging channel (WhatsApp, Email, etc.) for the organization. Credentials are stored encrypted. Returns the created channel id.',
+      inputSchema: {
+        name: z.string().min(1).describe('Friendly name for the channel'),
+        channelType: z
+          .enum(['whatsapp', 'instagram', 'email', 'sms', 'telegram'])
+          .describe('Type of channel'),
+        provider: z
+          .string()
+          .min(1)
+          .describe('Provider name: z-api, meta-cloud, evolution, resend, meta, etc.'),
+        externalIdentifier: z
+          .string()
+          .min(1)
+          .describe('Phone number, email address, or handle that identifies this channel externally'),
+        businessUnitId: z
+          .string()
+          .uuid()
+          .describe('Business unit this channel belongs to'),
+        credentials: z
+          .record(z.string(), z.string())
+          .default({})
+          .describe('Provider credentials as key-value pairs (e.g. apiKey, instanceName, serverUrl)'),
+        settings: z
+          .record(z.string(), z.unknown())
+          .default({})
+          .describe('Optional provider settings'),
+      },
+    },
+    async (args) => {
+      const ctx = getMcpContext();
+
+      const { data, error } = await getDb()
+        .from('messaging_channels')
+        .insert({
+          organization_id: ctx.organizationId,
+          business_unit_id: args.businessUnitId,
+          channel_type: args.channelType,
+          provider: args.provider,
+          external_identifier: args.externalIdentifier,
+          name: args.name,
+          credentials: args.credentials ?? {},
+          settings: args.settings ?? {},
+          status: 'pending',
+        })
+        .select('id, name, channel_type, provider, external_identifier, status, created_at')
+        .maybeSingle();
+
+      if (error || !data) {
+        return err(error?.message ?? 'Falha ao criar canal');
+      }
+
+      const result: Record<string, unknown> = { ...data };
+      if (args.provider === 'evolution') {
+        result.warning = 'Canal Evolution criado. Configure o webhook na sua instância apontando para: /functions/v1/messaging-webhook-evolution/' + data.id;
+      }
+      return ok(result);
+    }
+  );
+
   // ─── crm.conversations.list ──────────────────────────────────────────────
   server.registerTool(
     'crm.conversations.list',
